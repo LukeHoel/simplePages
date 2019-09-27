@@ -53,12 +53,32 @@ void read_closing_tag(std::string expected_end_tag_name,std::istream& is){
   }
 }
 
+bool is_void_tag(std::string tag_name){
+			return tag_name == "area" ||
+			tag_name == "base" ||
+			tag_name == "br" ||
+			tag_name == "col" ||
+			tag_name == "embed" ||
+			tag_name == "hr" ||
+			tag_name == "img" ||
+			tag_name == "input" ||
+			tag_name == "link" ||
+			tag_name == "meta" ||
+			tag_name == "param" ||
+			tag_name == "source" ||
+			tag_name == "track" ||
+			tag_name == "wbr" ||
+			// Obsolete
+			tag_name == "command" ||
+			tag_name == "keygen" ||
+			tag_name == "menuitem";
+}
+
 void read_into_element(html_element &parent_element, std::istream &is) {
   char current;
   bool found_closing;
   std::string content;
   while (!found_closing && is >> current) {
-    // Get tag open
     if (current == '<') {
       // Check if it's a closing tag
       char next;
@@ -67,39 +87,19 @@ void read_into_element(html_element &parent_element, std::istream &is) {
         found_closing = true;
         read_closing_tag(parent_element.name, is);
       } else {
-        // If it's an opening tag, read it as normal
         is.putback(next);
         html_element new_element = read_opening_tag(is);
   		
-        // Read element content unless it is a void element (List found on 
-		if(
-			new_element.name != "area" &&
-			new_element.name != "base" &&
-			new_element.name != "br" &&
-			new_element.name != "col" &&
-			new_element.name != "embed" &&
-			new_element.name != "hr" &&
-			new_element.name != "img" &&
-			new_element.name != "input" &&
-			new_element.name != "link" &&
-			new_element.name != "meta" &&
-			new_element.name != "param" &&
-			new_element.name != "source" &&
-			new_element.name != "track" &&
-			new_element.name != "wbr" &&
-			// Obsolete
-			new_element.name != "command" &&
-			new_element.name != "keygen" &&
-			new_element.name != "menuitem"
-			){
-        	read_into_element(new_element, is);
-		}
+        if(!is_void_tag(new_element.name)){
+              read_into_element(new_element, is);
+        }
         parent_element.children.push_back(new_element);
       }
     } else {
+      // Raw content
       parent_element.content += current;
     }
-  }
+  } 
   // Trim the raw content
   const char *chars = "\t\n\v\f\r ";
   parent_element.content.erase(0,

@@ -7,18 +7,10 @@
 
 struct html_element {
   std::string name;
+  std::unordered_map<std::string, std::string> attributes;
   std::string content;
   std::vector<html_element> children;
-  char test[10][1000];
 };
-
-struct html_attribute {
-  html_element *element;
-  std::string name;
-  std::string content;
-};
-
-std::vector<html_element> attributes;
 
 void read_into_element(html_element &parent_element, std::istream &is) {
   char current;
@@ -55,20 +47,41 @@ void read_into_element(html_element &parent_element, std::istream &is) {
         // At this point we could read the rest of the values into an
         // unordered_map to store attributes
         ss >> new_element.name;
-        /*
+        
         std::string attribute;
         while(ss >> attribute){
                 size_t equals_location = attribute.find_first_of('=');
                 if(equals_location != std::string::npos){
-
+						std::string attribute_name = attribute.substr(0, equals_location);
                 }
                 else{
                         new_element.attributes[attribute] = "";
                 }
         }
-        */
-        // Read element content
-        read_into_element(new_element, is);
+        
+        // Read element content unless it is a void element (List found on 
+		if(
+			new_element.name != "area" &&
+			new_element.name != "base" &&
+			new_element.name != "br" &&
+			new_element.name != "col" &&
+			new_element.name != "embed" &&
+			new_element.name != "hr" &&
+			new_element.name != "img" &&
+			new_element.name != "input" &&
+			new_element.name != "link" &&
+			new_element.name != "meta" &&
+			new_element.name != "param" &&
+			new_element.name != "source" &&
+			new_element.name != "track" &&
+			new_element.name != "wbr" &&
+			// Obsolete
+			new_element.name != "command" &&
+			new_element.name != "keygen" &&
+			new_element.name != "menuitem"
+			){
+        	read_into_element(new_element, is);
+		}
         parent_element.children.push_back(new_element);
       }
     } else {

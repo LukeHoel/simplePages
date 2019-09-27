@@ -12,34 +12,10 @@ struct html_element {
   std::vector<html_element> children;
 };
 
-void read_into_element(html_element &parent_element, std::istream &is) {
-  char current;
-  bool found_closing;
-  std::string content;
-  while (!found_closing && is >> current) {
-    // Get tag open
-    if (current == '<') {
-      // Check if it's a closing tag
-      char next;
-      is >> next;
-      if (next == '/') {
-        found_closing = true;
-        std::string end_tag_name;
-        // Record content of end tag and check it against opening tag
-        while (is >> current && current != '>') {
-          end_tag_name += current;
-        }
-        if (parent_element.name != end_tag_name) {
-          std::cout << "Warning - Unexpected end tag '" << end_tag_name << "'"
-                    << std::endl;
-          std::cout << "        - Expected end tag '" << parent_element.name
-                    << "'" << std::endl;
-        }
-      } else {
-        // If it's an opening tag, read it as normal
-        is.putback(next);
+html_element read_opening_tag(std::istream& is){
         html_element new_element;
-        // Construct initial tag
+        char current;
+          // Construct initial tag
         std::stringstream ss;
         while (is >> current && current != '>') {
           ss << current;
@@ -58,7 +34,43 @@ void read_into_element(html_element &parent_element, std::istream &is) {
                         new_element.attributes[attribute] = "";
                 }
         }
-        
+
+        return new_element;
+}
+
+void read_closing_tag(std::string expected_end_tag_name,std::istream& is){
+  char current;
+  std::string end_tag_name;
+  // Record content of end tag and check it against opening tag
+  while (is >> current && current != '>') {
+    end_tag_name += current;
+  }
+  if (expected_end_tag_name != end_tag_name) {
+    std::cout << "Warning - Unexpected end tag '" << end_tag_name << "'"
+              << std::endl;
+    std::cout << "        - Expected end tag '" << expected_end_tag_name
+              << "'" << std::endl;
+  }
+}
+
+void read_into_element(html_element &parent_element, std::istream &is) {
+  char current;
+  bool found_closing;
+  std::string content;
+  while (!found_closing && is >> current) {
+    // Get tag open
+    if (current == '<') {
+      // Check if it's a closing tag
+      char next;
+      is >> next;
+      if (next == '/') {
+        found_closing = true;
+        read_closing_tag(parent_element.name, is);
+      } else {
+        // If it's an opening tag, read it as normal
+        is.putback(next);
+        html_element new_element = read_opening_tag(is);
+  		
         // Read element content unless it is a void element (List found on 
 		if(
 			new_element.name != "area" &&
@@ -111,8 +123,9 @@ int main() {
 
   html_element root_element;
   root_element.name = "Root Element";
-
+	
   std::cin.unsetf(std::ios_base::skipws);
+
   read_into_element(root_element, std::cin);
 
   print_element(root_element);

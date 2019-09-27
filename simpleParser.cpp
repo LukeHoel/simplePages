@@ -2,14 +2,23 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <vector>
+
+struct html_attribute{
+  std::string name;
+  std::string value;
+  html_attribute(std::string name, std::string value): name(name), value(value) {} 
+};
 
 struct html_element {
   std::string name;
-  std::unordered_map<std::string, std::string> attributes;
-  std::string content;
+  std::vector<html_attribute> attributes;
+  // Elements should not have both
+  const bool isTextOnly;
+  std::string text;
   std::vector<html_element> children;
+  html_element():isTextOnly(false), text(""){};
+  html_element(std::string text) :isTextOnly(true){ this->text=text; };
 };
 
 html_element read_opening_tag(std::istream& is){
@@ -26,13 +35,22 @@ html_element read_opening_tag(std::istream& is){
         
         std::string attribute;
         while(ss >> attribute){
-                size_t equals_location = attribute.find_first_of('=');
-                if(equals_location != std::string::npos){
-						std::string attribute_name = attribute.substr(0, equals_location);
-                }
-                else{
-                        new_element.attributes[attribute] = "";
-                }
+          size_t equals_location = attribute.find_first_of('=');
+          if(equals_location != std::string::npos){
+            std::string attribute_name = attribute.substr(0, equals_location);
+            std::string attribute_value = attribute.substr(equals_location);
+            // Validate proper format
+            if(attribute_value[0] == '=' && 
+                // Either " or ' at beggining
+                (attribute_value[1] == '"' || attribute_value[1] == '\'') && 
+                // Either " or ' at end
+                (attribute_value[attribute_value.size()-1] == '"' || attribute_value[attribute_value.size()-1] == '\'')){
+              new_element.attributes.push_back(html_attribute(attribute_name, attribute_value.substr(2, attribute_value.size()-3)));
+            }
+          }
+          else{
+            new_element.attributes.push_back(html_attribute(attribute, ""));
+          }
         }
 
         return new_element;
@@ -74,12 +92,24 @@ bool is_void_tag(std::string tag_name){
 			tag_name == "menuitem";
 }
 
+void trim(std::string& str){
+    const char *chars = "\t\n\v\f\r ";
+  str.erase(0,str.find_first_not_of(chars));
+  str.erase(str.find_last_not_of(chars) + 1);
+}
+
 void read_into_element(html_element &parent_element, std::istream &is) {
   char current;
   bool found_closing;
-  std::string content;
+  std::string text;
   while (!found_closing && is >> current) {
     if (current == '<') {
+      // Trim the raw content
+      trim(text);
+      if(!text.empty()){
+        parent_element.children.push_back(html_element(text));
+      }
+      text = "";
       // Check if it's a closing tag
       char next;
       is >> next;
@@ -97,15 +127,9 @@ void read_into_element(html_element &parent_element, std::istream &is) {
       }
     } else {
       // Raw content
-      parent_element.content += current;
+      text += current;
     }
   } 
-  // Trim the raw content
-  const char *chars = "\t\n\v\f\r ";
-  parent_element.content.erase(0,
-                               parent_element.content.find_first_not_of(chars));
-  parent_element.content.erase(parent_element.content.find_last_not_of(chars) +
-                               1);
 }
 
 void print_element(html_element element, int depth_level = 1) {
@@ -113,8 +137,14 @@ void print_element(html_element element, int depth_level = 1) {
     for (int i = 0; i < depth_level; i++) {
       std::cout << "-";
     }
-    std::cout << "|" << element.name << " ~ '" << element.content << "'"
-              << std::endl;
+    std::cout << "|" << element.name;
+    for(html_attribute attribute : element.attributes){
+      std::cout << " " << attribute.name << "='" << attribute.value << "'";
+    }
+    if(!element.text.empty()){
+      std::cout << " Content: '" << element.text << "'";
+    }
+     std::cout << std::endl;
     print_element(element, depth_level + 1);
   }
 }

@@ -1,8 +1,11 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <algorithm>
 
 struct html_attribute{
   std::string name;
@@ -149,18 +152,34 @@ void print_element(html_element element, int depth_level = 1) {
   }
 }
 
-int main() {
+// std::unordered_map<std::string, std::string> read_element_styles(html_element element){
+//   std::unordered_map<std::string, std::string> styles;
+
+//   for(const html_attribute& attribute: element.attributes){
+//     std::string lower_name = attribute.name;
+//     std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), std::tolower);
+//     if(lower_name == "style"){
+
+//     }
+//   }
+
+//   return styles;
+// }
+
+int main(int argc, char** argv) {
 
   html_element root_element;
   root_element.name = "Root Element";
 	
-  std::cin.unsetf(std::ios_base::skipws);
-
-  read_into_element(root_element, std::cin);
-
+  if(argc > 1){
+    std::ifstream file(argv[1]);
+    file.unsetf(std::ios_base::skipws); 
+    read_into_element(root_element, file);
+  }else{
+    std::cin.unsetf(std::ios_base::skipws);
+    read_into_element(root_element, std::cin);
+  }
   print_element(root_element);
-
-  std::cout << std::endl;
 
   return 0;
 }

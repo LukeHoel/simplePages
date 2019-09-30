@@ -6,9 +6,37 @@
 #include <string>
 #include <vector>
 
+int hex_str_to_int(std::string hex_str){
+	int decimal_value = 0;
+	try{
+		std::stringstream ss;
+		std::string decimal_str;
+		ss << hex_str;
+		ss >> std::hex >> decimal_value;
+  	} catch (std::invalid_argument e) {
+		std::cout << "Failed to read hex value :" << e.what() << std::endl;
+	}
+	return decimal_value;
+}
+
+struct css_color{
+	int red = 0;
+	int green = 0;
+	int blue = 0;
+	css_color(){}
+	css_color(std::string color_string){
+		if(color_string[0] == '#'){
+			red = hex_str_to_int(color_string.substr(1,2));
+			green = hex_str_to_int(color_string.substr(3,2));
+			blue = hex_str_to_int(color_string.substr(5,2));
+		}
+	}
+};
+
 struct css_styles {
   int width = 0;
   int height = 0;
+  css_color background_color;
 };
 
 struct html_attribute {
@@ -135,7 +163,9 @@ void read_raw_style(css_styles &style, std::string &style_name,
       read_parsed_style(style.width, style_value);
     } else if (style_name == "height") {
       read_parsed_style(style.height, style_value);
-    }
+    } else if(style_name == "background_color"){
+		style.background_color = css_color(style_value);	
+	}
   }
   // Clear values after getting
   style_name = style_value = "";
@@ -222,12 +252,16 @@ void print_element(html_element element, int depth_level = 1) {
     if (element.style.height != 0) {
       std::cout << " Height: " << element.style.height;
     }
+    std::cout << " Red: " << element.style.background_color.red;
+    std::cout << " Green: " << element.style.background_color.green;
+    std::cout << " Blue: " << element.style.background_color.blue;
     std::cout << std::endl;
     print_element(element, depth_level + 1);
   }
 }
 
-int main(int argc, char **argv) {
+int main1(int argc, char **argv) {
+//int main(int argc, char **argv) {
 
   html_element root_element;
   root_element.name = "Root Element";

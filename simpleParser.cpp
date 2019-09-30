@@ -9,10 +9,6 @@
 struct css_styles {
   int width = 0;
   int height = 0;
-  int background_color_red = 0;
-  int background_color_green = 0;
-  int background_color_blue = 0;
-  int background_color_alpha = -1;
 };
 
 struct html_attribute {
@@ -22,12 +18,14 @@ struct html_attribute {
       : name(name), value(value) {}
 };
 
-struct html_element {
+class html_element {
+  const bool isTextOnly;
+
+public:
   std::string name;
   std::vector<html_attribute> attributes;
   css_styles style;
   // Elements should not have both
-  const bool isTextOnly;
   std::string text;
   std::vector<html_element> children;
   html_element() : isTextOnly(false), text(""){};
@@ -42,18 +40,23 @@ html_element read_opening_tag(std::istream &is) {
   while (is >> current && current != '>') {
     ss << current;
   }
-  // At this point we could read the rest of the values into an
-  // unordered_map to store attributes
   ss >> new_element.name;
   ss.unsetf(std::ios_base::skipws);
 
   std::string attribute_name;
   std::string attribute_value;
   while (ss >> current) {
-    if (current != '=') {
+    // Handle case where there isn't any value
+    if (!attribute_name.empty() && current == ' ') {
+      new_element.attributes.push_back(
+          html_attribute(attribute_name, attribute_value));
+      attribute_name = attribute_value = "";
+      // Go until hitting equals, then go into value reading mode
+    } else if (current != '=') {
       attribute_name += current;
     } else {
       ss >> current;
+      // Treat either " or ' as the same here. Subject to change
       if (current == '"' || current == '\'') {
         while (ss >> current && current != '"' && current != '\'') {
           attribute_value += current;
@@ -114,18 +117,28 @@ std::string to_lowercase(std::string input) {
   return output;
 }
 
-void read_parsed_style(css_styles &style, std::string style_name,
-                       std::string style_value) {
+void read_parsed_style(int &parsed_value, std::string &raw_value) {
+  try {
+    // Just cut off units 'px' 'em' whatever for now
+    parsed_value = std::stoi(raw_value.substr(0, raw_value.size() - 2));
+  } catch (std::invalid_argument e) {
+    std::cout << "Failed to parse value: " << raw_value << std::endl;
+  }
+}
+
+void read_raw_style(css_styles &style, std::string &style_name,
+                    std::string &style_value) {
+  trim(style_name);
+  trim(style_value);
   if (!style_name.empty() && !style_value.empty()) {
     if (style_name == "width") {
-      try {
-        // Just cut off units 'px' 'em' whatever for now
-        style.width = std::stoi(style_value.substr(0, style_value.size() - 3));
-      } catch (std::invalid_argument e) {
-        style.width = 0;
-      }
+      read_parsed_style(style.width, style_value);
+    } else if (style_name == "height") {
+      read_parsed_style(style.height, style_value);
     }
   }
+  // Clear values after getting
+  style_name = style_value = "";
 }
 
 void read_element_styles(html_element &element) {
@@ -134,24 +147,24 @@ void read_element_styles(html_element &element) {
   ss.unsetf(std::ios_base::skipws);
   for (const html_attribute &attribute : element.attributes) {
     std::string lower_name = to_lowercase(attribute.name);
+    trim(lower_name);
     if (lower_name == "style") {
       ss.clear();
       ss << attribute.value;
       std::string style_name;
       std::string style_value;
+      // Css styles are seperated by semicolons. values and labels are seperated
+      // by colons
       while (ss >> current) {
         if (current == ':') {
           while (ss >> current && current != ';') {
             style_value += current;
           }
-          read_parsed_style(element.style, style_name, style_value);
+          read_raw_style(element.style, style_name, style_value);
         } else {
           style_name += current;
         }
       }
-      // Split by ; first
-      std::cout << element.name << "has a style" << std::endl;
-      element.style.width = 5;
     }
   }
 }
@@ -203,8 +216,12 @@ void print_element(html_element element, int depth_level = 1) {
     if (!element.text.empty()) {
       std::cout << " Content: '" << element.text << "'";
     }
-    std::cout << " Width: " << element.style.width;
-    std::cout << " Height: " << element.style.height;
+    if (element.style.width != 0) {
+      std::cout << " Width: " << element.style.width;
+    }
+    if (element.style.height != 0) {
+      std::cout << " Height: " << element.style.height;
+    }
     std::cout << std::endl;
     print_element(element, depth_level + 1);
   }

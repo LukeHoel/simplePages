@@ -1,3 +1,4 @@
+// #include "olcPixelGameEngine/olcPixelGameEngine.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -113,10 +114,42 @@ std::string to_lowercase(std::string input) {
   return output;
 }
 
-void read_element_styles(html_element element) {
+void read_parsed_style(css_styles &style, std::string style_name,
+                       std::string style_value) {
+  if (!style_name.empty() && !style_value.empty()) {
+    if (style_name == "width") {
+      try {
+        // Just cut off units 'px' 'em' whatever for now
+        style.width = std::stoi(style_value.substr(0, style_value.size() - 3));
+      } catch (std::invalid_argument e) {
+        style.width = 0;
+      }
+    }
+  }
+}
+
+void read_element_styles(html_element &element) {
+  std::stringstream ss;
+  char current;
+  ss.unsetf(std::ios_base::skipws);
   for (const html_attribute &attribute : element.attributes) {
     std::string lower_name = to_lowercase(attribute.name);
     if (lower_name == "style") {
+      ss.clear();
+      ss << attribute.value;
+      std::string style_name;
+      std::string style_value;
+      while (ss >> current) {
+        if (current == ':') {
+          while (ss >> current && current != ';') {
+            style_value += current;
+          }
+          read_parsed_style(element.style, style_name, style_value);
+        } else {
+          style_name += current;
+        }
+      }
+      // Split by ; first
       std::cout << element.name << "has a style" << std::endl;
       element.style.width = 5;
     }
@@ -170,6 +203,8 @@ void print_element(html_element element, int depth_level = 1) {
     if (!element.text.empty()) {
       std::cout << " Content: '" << element.text << "'";
     }
+    std::cout << " Width: " << element.style.width;
+    std::cout << " Height: " << element.style.height;
     std::cout << std::endl;
     print_element(element, depth_level + 1);
   }

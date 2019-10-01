@@ -33,10 +33,16 @@ struct css_color{
 	}
 };
 
+enum css_display{
+	none,
+	block
+};
+
 struct css_styles {
   int width = 0;
   int height = 0;
   css_color background_color;
+  css_display display = css_display::block;
 };
 
 struct html_attribute {
@@ -163,8 +169,14 @@ void read_raw_style(css_styles &style, std::string &style_name,
       read_parsed_style(style.width, style_value);
     } else if (style_name == "height") {
       read_parsed_style(style.height, style_value);
-    } else if(style_name == "background_color"){
+    } else if(style_name == "background-color"){
 		style.background_color = css_color(style_value);	
+	} else if(style_name == "display"){
+		if(style_value == "none"){
+			style.display = css_display::none;
+		}else{
+			style.display = css_display::block;
+		}
 	}
   }
   // Clear values after getting
@@ -195,6 +207,8 @@ void read_element_styles(html_element &element) {
           style_name += current;
         }
       }
+	  // Only allow for one style tag
+	  break;
     }
   }
 }

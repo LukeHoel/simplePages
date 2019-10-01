@@ -11,21 +11,28 @@ public:
   SimpleDisplayer() { sAppName = "Playground"; }
 
   bool OnUserCreate() override { return true; }
-	
-  void drawElement(html_element& element){
-		FillRect(0,0,element.style.width,element.style.height,
+
+  // Only does block level elements for now
+  void drawElement(html_element& element, int my_offset_x = 0,int my_offset_y = 0){
+  			
+		FillRect(my_offset_x,my_offset_y,element.style.width,element.style.height,
 			olc::Pixel(
 			element.style.background_color.red,
 			element.style.background_color.green,
 			element.style.background_color.blue
-			));
+		));
+		int offset_x = 0;	
+		int offset_y = 0;	
 		for(html_element child: element.children){
-			drawElement(child);
+			if(child.style.display != css_display::none){
+				drawElement(child, offset_x, offset_y);
+				offset_y += child.style.height;
+			}
 		}
   }
  	
   bool OnUserUpdate(float deltaTime) override {
-    Clear(olc::BLACK);
+    Clear(olc::WHITE);
 	drawElement(root_element);
     return true;
   }

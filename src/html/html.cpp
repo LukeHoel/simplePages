@@ -1,70 +1,10 @@
-// #include "olcPixelGameEngine/olcPixelGameEngine.h"
+#include "html.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-int hex_str_to_int(std::string hex_str){
-	int decimal_value = 0;
-	try{
-		std::stringstream ss;
-		std::string decimal_str;
-		ss << hex_str;
-		ss >> std::hex >> decimal_value;
-  	} catch (std::invalid_argument e) {
-		std::cout << "Failed to read hex value :" << e.what() << std::endl;
-	}
-	return decimal_value;
-}
-
-struct css_color{
-	int red = 0;
-	int green = 0;
-	int blue = 0;
-	css_color(){}
-	css_color(std::string color_string){
-		if(color_string[0] == '#'){
-			red = hex_str_to_int(color_string.substr(1,2));
-			green = hex_str_to_int(color_string.substr(3,2));
-			blue = hex_str_to_int(color_string.substr(5,2));
-		}
-	}
-};
-
-enum css_display{
-	none,
-	block
-};
-
-struct css_styles {
-  int width = 0;
-  int height = 0;
-  css_color background_color;
-  css_display display = css_display::block;
-};
-
-struct html_attribute {
-  std::string name;
-  std::string value;
-  html_attribute(std::string name, std::string value)
-      : name(name), value(value) {}
-};
-
-class html_element {
-  const bool isTextOnly;
-
-public:
-  std::string name;
-  std::vector<html_attribute> attributes;
-  css_styles style;
-  // Elements should not have both
-  std::string text;
-  std::vector<html_element> children;
-  html_element() : isTextOnly(false), text(""){};
-  html_element(std::string text) : isTextOnly(true) { this->text = text; };
-};
 
 html_element read_opening_tag(std::istream &is) {
   html_element new_element;
@@ -135,22 +75,6 @@ bool is_void_tag(std::string tag_name) {
          tag_name == "menuitem";
 }
 
-void trim(std::string &str) {
-  const char *chars = "\t\n\v\f\r ";
-  str.erase(0, str.find_first_not_of(chars));
-  str.erase(str.find_last_not_of(chars) + 1);
-}
-
-std::string to_lowercase(std::string input) {
-  std::string output(input);
-  for (int i = 0; i < output.size(); i++) {
-    if (output[i] >= 'A' && output[i] <= 'Z') {
-      output[i] += 32;
-    }
-  }
-  return output;
-}
-
 void read_parsed_style(int &parsed_value, std::string &raw_value) {
   try {
     // Just cut off units 'px' 'em' whatever for now
@@ -169,15 +93,15 @@ void read_raw_style(css_styles &style, std::string &style_name,
       read_parsed_style(style.width, style_value);
     } else if (style_name == "height") {
       read_parsed_style(style.height, style_value);
-    } else if(style_name == "background-color"){
-		style.background_color = css_color(style_value);	
-	} else if(style_name == "display"){
-		if(style_value == "none"){
-			style.display = css_display::none;
-		}else{
-			style.display = css_display::block;
-		}
-	}
+    } else if (style_name == "background-color") {
+      style.background_color = css_color(style_value);
+    } else if (style_name == "display") {
+      if (style_value == "none") {
+        style.display = css_display::none;
+      } else {
+        style.display = css_display::block;
+      }
+    }
   }
   // Clear values after getting
   style_name = style_value = "";
@@ -207,8 +131,8 @@ void read_element_styles(html_element &element) {
           style_name += current;
         }
       }
-	  // Only allow for one style tag
-	  break;
+      // Only allow for one style tag
+      break;
     }
   }
 }
@@ -248,7 +172,7 @@ void read_into_element(html_element &parent_element, std::istream &is) {
   }
 }
 
-void print_element(html_element element, int depth_level = 1) {
+void print_element(html_element element, int depth_level) {
   for (html_element &element : element.children) {
     for (int i = 0; i < depth_level; i++) {
       std::cout << "-";
@@ -272,23 +196,4 @@ void print_element(html_element element, int depth_level = 1) {
     std::cout << std::endl;
     print_element(element, depth_level + 1);
   }
-}
-
-int main1(int argc, char **argv) {
-//int main(int argc, char **argv) {
-
-  html_element root_element;
-  root_element.name = "Root Element";
-
-  if (argc > 1) {
-    std::ifstream file(argv[1]);
-    file.unsetf(std::ios_base::skipws);
-    read_into_element(root_element, file);
-  } else {
-    std::cin.unsetf(std::ios_base::skipws);
-    read_into_element(root_element, std::cin);
-  }
-  print_element(root_element);
-
-  return 0;
 }

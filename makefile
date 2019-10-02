@@ -1,8 +1,8 @@
-all: build link
-withEngine: buildEngine build link
+all: buildApp link
+withEngine: buildEngine buildApp link
 link:
-	@g++  simplePages.o  olcPixelGameEngine/olcPixelGameEngine.o -pthread -lpng -lX11 -lGL
-build:
-	@g++ -c simpleDisplayer.cpp -o simplePages.o
+	@g++  build/simplePages.o  build/olcPixelGameEngine.o -pthread -lpng -lX11 -lGL
+buildApp:
+	@g++ -c src/display.cpp -o build/simplePages.o
 buildEngine:
-	@g++ -c olcPixelGameEngine/olcPixelGameEngine.cpp -o olcPixelGameEngine/olcPixelGameEngine.o
+	@g++ -c olcPixelGameEngine/olcPixelGameEngine.cpp -o build/olcPixelGameEngine.o

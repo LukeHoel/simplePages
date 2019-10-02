@@ -49,7 +49,7 @@ html_element read_opening_tag(std::istream &is) {
   return new_element;
 }
 
-void read_closing_tag(std::string expected_end_tag_name, std::istream &is) {
+void read_closing_tag(std::string &expected_end_tag_name, std::istream &is) {
   char current;
   std::string end_tag_name;
   // Record content of end tag and check it against opening tag
@@ -64,7 +64,7 @@ void read_closing_tag(std::string expected_end_tag_name, std::istream &is) {
   }
 }
 
-bool is_void_tag(std::string tag_name) {
+bool is_void_tag(std::string &tag_name) {
   return tag_name == "area" || tag_name == "base" || tag_name == "br" ||
          tag_name == "col" || tag_name == "embed" || tag_name == "hr" ||
          tag_name == "img" || tag_name == "input" || tag_name == "link" ||
@@ -75,7 +75,7 @@ bool is_void_tag(std::string tag_name) {
          tag_name == "menuitem";
 }
 
-void read_parsed_style(int &parsed_value, std::string &raw_value) {
+void read_parsed_style(css_style_int &parsed_value, std::string &raw_value) {
   try {
     // Just cut off units 'px' 'em' whatever for now
     parsed_value = std::stoi(raw_value.substr(0, raw_value.size() - 2));
@@ -160,15 +160,37 @@ void read_into_element(html_element &parent_element, std::istream &is) {
         html_element new_element = read_opening_tag(is);
         read_element_styles(new_element);
 
+        // Full width block elements
+        if (!new_element.style.width.is_set() &&
+            new_element.style.display == css_display::block) {
+          new_element.calculated_width = parent_element.calculated_width;
+        }
+
         if (!is_void_tag(new_element.name)) {
           read_into_element(new_element, is);
         }
+
         parent_element.children.push_back(new_element);
       }
     } else {
       // Raw content
       text += current;
     }
+  }
+  // Elements with set width
+  for (html_element &child : parent_element.children) {
+    if (!parent_element.style.width.is_set()) {
+      parent_element.calculated_width += child.calculated_width;
+    }
+    if (!parent_element.style.height.is_set()) {
+      parent_element.calculated_height += child.calculated_height;
+    }
+  }
+  if (parent_element.calculated_width < parent_element.style.width) {
+    parent_element.calculated_width = parent_element.style.width;
+  }
+  if (parent_element.calculated_height < parent_element.style.height) {
+    parent_element.calculated_height = parent_element.style.height;
   }
 }
 

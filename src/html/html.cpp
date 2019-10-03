@@ -93,6 +93,8 @@ void read_raw_style(css_styles &style, std::string &style_name,
       read_parsed_style(style.width, style_value);
     } else if (style_name == "height") {
       read_parsed_style(style.height, style_value);
+    } else if (style_name == "color") {
+      style.color = css_color(style_value);
     } else if (style_name == "background-color") {
       style.background_color = css_color(style_value);
     } else if (style_name == "display") {

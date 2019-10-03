@@ -37,7 +37,7 @@ public:
 							element.style.color.blue
 							), 1);
 				offset_x += 8;
-				if(child.text[i] == ' ' && offset_x > element.calculated_width){
+				if(isspace(child.text[i]) && offset_x > element.calculated_width){
 					offset_x = 0;
         			offset_y += 8;
 				}

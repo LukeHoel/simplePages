@@ -2,8 +2,11 @@
 #include "css/css.h"
 #include "html/html.h"
 #include "utils/utils.h"
-size_t amountPixelsX = 1920;
-size_t amountPixelsY = 1080;
+// 1080p
+//size_t amountPixelsX = 1920;
+//size_t amountPixelsY = 1080;
+size_t amountPixelsX = 1280;
+size_t amountPixelsY = 720;
 
 html_element root_element;
 
@@ -26,8 +29,24 @@ public:
     int offset_y = 0;
     for (html_element child : element.children) {
       if (child.style.display != css_display::none) {
-        drawElement(child, my_offset_x + offset_x, my_offset_y + offset_y);
-        offset_y += child.calculated_height;
+	  	if(child.isTextOnly){
+			for(int i = 0; i < child.text.size(); i++){
+			DrawString(my_offset_x + offset_x, my_offset_y + offset_y, child.text.substr(i,1),
+				olc::Pixel(element.style.color.red,
+							element.style.color.green,
+							element.style.color.blue
+							), 1);
+				offset_x += 8;
+				if(child.text[i] == ' ' && offset_x > element.calculated_width){
+					offset_x = 0;
+        			offset_y += 8;
+				}
+			}
+		}
+		else{
+        	drawElement(child, my_offset_x + offset_x, my_offset_y + offset_y);
+        	offset_y += child.calculated_height;
+		}
       }
     }
   }
@@ -48,7 +67,7 @@ int main(int argc, char **argv) {
   // Parse input
   root_element.name = "Root Element";
   root_element.calculated_width = amountPixelsX;
-  root_element.calculated_height = amountPixelsY;
+  root_element.calculated_height= amountPixelsY;
   if (argc > 1) {
     std::ifstream file(argv[1]);
     file.unsetf(std::ios_base::skipws);

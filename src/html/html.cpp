@@ -100,7 +100,7 @@ void read_raw_style(css_styles &style, std::string &style_name,
         style.display = css_display::none;
       } else {
         style.display = css_display::block;
-      }
+	  }
     }
   }
   // Clear values after getting
@@ -146,7 +146,8 @@ void read_into_element(html_element &parent_element, std::istream &is) {
       // Trim the raw content
       trim(text);
       if (!text.empty()) {
-        parent_element.children.push_back(html_element(text));
+	  	html_element text_element = html_element(text);
+        parent_element.children.push_back(text_element);
       }
       text = "";
       // Check if it's a closing tag
@@ -161,8 +162,8 @@ void read_into_element(html_element &parent_element, std::istream &is) {
         read_element_styles(new_element);
 
         // Full width block elements
-        if (!new_element.style.width.is_set() &&
-            new_element.style.display == css_display::block) {
+        if (!new_element.style.width.is_set() ||
+            new_element.style.display == css_display::_inline) {
           new_element.calculated_width = parent_element.calculated_width;
         }
 

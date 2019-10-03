@@ -13,9 +13,8 @@ struct html_attribute {
 };
 
 class html_element {
-  const bool isTextOnly;
-
 public:
+  const bool isTextOnly;
   std::string name;
   std::vector<html_attribute> attributes;
   css_styles style;

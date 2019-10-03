@@ -45,7 +45,7 @@ public:
   bool operator==(const int value) { return inner_value == value; }
 };
 
-enum css_display { none, block };
+enum css_display { none, block, _inline };
 
 struct css_styles {
   css_style_int width;
